@@ -16,14 +16,17 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y jq
+        sudo apt-get install -y jq curl
 
     - name: Fetch JSON & Extract Cookie for Star Sports Select 1 HD
       run: |
-        # Fetch JSON
-        curl -s "https://pkll.xojiv79335.workers.dev/" > full.json
+        set -e  # exit on error
 
-        # Extract channel_url
+        # Fetch JSON
+        echo "Fetching JSON..."
+        curl -s "https://pkll.xojiv79335.workers.dev/" > full.json || { echo "Failed to fetch JSON"; exit 0; }
+
+        # Extract channel_url safely
         url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json)
 
         if [ -z "$url" ]; then
@@ -31,11 +34,17 @@ jobs:
           exit 0
         fi
 
-        # Extract hdnea cookie
+        # Extract hdnea cookie safely
         cookie=$(echo "$url" | sed -n 's/.*\(hdnea=[^&]*\).*/\1/p')
+
+        if [ -z "$cookie" ]; then
+          echo "hdnea cookie not found!"
+          exit 0
+        fi
 
         # Write JSON
         echo "{\"cookieHeader\": \"$cookie\"}" > cookie.json
+        echo "cookie.json created with cookie: $cookie"
 
     - name: Commit & Push
       run: |
