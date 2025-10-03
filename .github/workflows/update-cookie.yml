@@ -2,7 +2,7 @@ name: Auto Update Cookie
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # Runs every 30 minutes
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,47 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y jq curl
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
 
-    - name: Fetch JSON & Extract Cookie
-      run: |
-        set -euo pipefail
+      - name: Fetch JSON & Extract Cookie with Debug
+        run: |
+          set -euxo pipefail
 
-        # Fetch JSON
-        echo "Fetching JSON..."
-        curl -s "https://pkll.xojiv79335.workers.dev/" > full.json || { echo "Failed to fetch JSON"; exit 0; }
+          echo "Fetching JSON..."
+          curl -s "https://pkll.xojiv79335.workers.dev/" > full.json
+          echo "Fetched JSON:"
+          cat full.json
 
-        # Extract channel_url
-        url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json || echo "")
+          echo "Extracting channel_url for Star Sports Select 1 HD..."
+          url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json || echo "")
+          echo "Extracted URL: $url"
 
-        if [ -z "$url" ]; then
-          echo "Channel 'Star Sports Select 1 HD' not found or channel_url empty"
-          exit 0
-        fi
+          if [ -z "$url" ]; then
+            echo "Channel not found or empty URL"
+            exit 0
+          fi
 
-        # Extract hdnea cookie safely
-        cookie=$(echo "$url" | sed -n 's/.*\(hdnea=[^&]*\).*/\1/p')
+          echo "Extracting hdnea cookie..."
+          cookie=$(echo "$url" | sed -n 's/.*\(hdnea=[^&]*\).*/\1/p')
+          echo "Extracted cookie: $cookie"
 
-        if [ -z "$cookie" ]; then
-          echo "hdnea cookie not found in channel_url"
-          exit 0
-        fi
+          if [ -z "$cookie" ]; then
+            echo "Cookie not found in URL"
+            exit 0
+          fi
 
-        # Write cookie.json
-        echo "{\"cookieHeader\": \"$cookie\"}" > cookie.json
-        echo "cookie.json created successfully with cookie: $cookie"
+          echo "{\"cookieHeader\": \"$cookie\"}" > cookie.json
+          echo "cookie.json created successfully."
 
-    - name: Commit & Push
-      run: |
-        if ! git diff --quiet; then
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add cookie.json
-          git commit -m "Auto-update Star Sports Select 1 HD cookie"
-          git push
+      - name: Commit & Push
+        run: |
+          if ! git diff --quiet; then
+            git config --global user.name "github-actions"
+            git config --global user.email "actions@github.com"
+            git add cookie.json
+            git commit -m "Auto-update Star Sports Select 1 HD cookie"
+            git push
