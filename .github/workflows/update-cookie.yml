@@ -3,7 +3,7 @@ name: Auto Update Cookie
 on:
   schedule:
     - cron: "*/30 * * * *"   # Runs every 30 minutes
-  workflow_dispatch:          # Manual trigger
+  workflow_dispatch:
 
 jobs:
   update-cookie:
@@ -18,19 +18,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y jq curl
 
-    - name: Fetch JSON & Extract Cookie for Star Sports Select 1 HD
+    - name: Fetch JSON & Extract Cookie
       run: |
-        set -e  # exit on error
+        set -euo pipefail
 
         # Fetch JSON
         echo "Fetching JSON..."
         curl -s "https://pkll.xojiv79335.workers.dev/" > full.json || { echo "Failed to fetch JSON"; exit 0; }
 
-        # Extract channel_url safely
-        url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json)
+        # Extract channel_url
+        url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json || echo "")
 
         if [ -z "$url" ]; then
-          echo "Channel 'Star Sports Select 1 HD' not found!"
+          echo "Channel 'Star Sports Select 1 HD' not found or channel_url empty"
           exit 0
         fi
 
@@ -38,13 +38,13 @@ jobs:
         cookie=$(echo "$url" | sed -n 's/.*\(hdnea=[^&]*\).*/\1/p')
 
         if [ -z "$cookie" ]; then
-          echo "hdnea cookie not found!"
+          echo "hdnea cookie not found in channel_url"
           exit 0
         fi
 
-        # Write JSON
+        # Write cookie.json
         echo "{\"cookieHeader\": \"$cookie\"}" > cookie.json
-        echo "cookie.json created with cookie: $cookie"
+        echo "cookie.json created successfully with cookie: $cookie"
 
     - name: Commit & Push
       run: |
