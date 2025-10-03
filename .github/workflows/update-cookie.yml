@@ -13,40 +13,40 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Fetch JSON & Extract Cookie with Python
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl
+          python3 - <<EOF
+          import requests, json, re
 
-      - name: Fetch JSON & Extract Cookie with Debug
-        run: |
-          set -euxo pipefail
+          URL = "https://pkll.xojiv79335.workers.dev/"
+          FILE_PATH = "cookie.json"
+          TARGET_CHANNEL = "Star Sports Select 1 HD"
 
-          echo "Fetching JSON..."
-          curl -s "https://pkll.xojiv79335.workers.dev/" > full.json
-          echo "Fetched JSON:"
-          cat full.json
+          # Fetch JSON
+          r = requests.get(URL)
+          data = r.json()
 
-          echo "Extracting channel_url for Star Sports Select 1 HD..."
-          url=$(jq -r '.[] | select(.channel_name=="Star Sports Select 1 HD") | .channel_url' full.json || echo "")
-          echo "Extracted URL: $url"
+          # Find the target channel
+          channel = next((c for c in data if c.get("channel_name") == TARGET_CHANNEL), None)
+          if not channel:
+              print(f"Channel '{TARGET_CHANNEL}' not found")
+              exit(0)
 
-          if [ -z "$url" ]; then
-            echo "Channel not found or empty URL"
-            exit 0
-          fi
+          # Extract hdnea cookie from channel_url
+          url = channel.get("channel_url", "")
+          match = re.search(r"(hdnea=[^&]+)", url)
+          if not match:
+              print("hdnea cookie not found")
+              exit(0)
 
-          echo "Extracting hdnea cookie..."
-          cookie=$(echo "$url" | sed -n 's/.*\(hdnea=[^&]*\).*/\1/p')
-          echo "Extracted cookie: $cookie"
+          cookie_value = match.group(1)
 
-          if [ -z "$cookie" ]; then
-            echo "Cookie not found in URL"
-            exit 0
-          fi
+          # Save to JSON
+          with open(FILE_PATH, "w") as f:
+              json.dump({"cookieHeader": cookie_value}, f, indent=4)
 
-          echo "{\"cookieHeader\": \"$cookie\"}" > cookie.json
-          echo "cookie.json created successfully."
+          print(f"cookie.json created successfully: {cookie_value}")
+          EOF
 
       - name: Commit & Push
         run: |
