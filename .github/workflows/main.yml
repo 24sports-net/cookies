@@ -1,0 +1,36 @@
+name: Update HDNEA Cookie
+
+# Trigger: every 10 minutes + manual
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update-cookie:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the repo
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # Step 2: Fetch the JSON and extract __hdnea__
+      - name: Fetch and update cookie
+        run: |
+          # Fetch JSON from your URL
+          curl -s https://pkll.xojiv79335.workers.dev/ > temp.json
+          
+          # Extract hdnea value from the first channel
+          hdnea=$(jq -r '.[0].channel_url' temp.json | sed -E 's/.*[?&]hdnea=([^&]+).*/\1/')
+          
+          # Save to cookie.json in desired format
+          echo "{\"cookieHeader\": \"__hdnea__=${hdnea}\"}" > cookie.json
+
+      # Step 3: Commit & push changes
+      - name: Commit & Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add cookie.json
+          git commit -m "Update __hdnea__ cookie"
+          git push
