@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -29,10 +29,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add cookie.json
-          # Only commit if there are changes
+          
+          # Only commit if changes exist
           if ! git diff --cached --quiet; then
             git commit -m "Update cookie.json"
             git push
           else
             echo "No changes to commit"
-          fi
