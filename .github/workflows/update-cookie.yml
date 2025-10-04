@@ -13,40 +13,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Fetch JSON & Extract Cookie with Python
-        run: |
-          python3 - <<EOF
-          import requests, json, re
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-          URL = "https://pkll.xojiv79335.workers.dev/"
-          FILE_PATH = "cookie.json"
-          TARGET_CHANNEL = "Star Sports Select 1 HD"
+      - name: Install requests
+        run: pip install requests
 
-          # Fetch JSON
-          r = requests.get(URL)
-          data = r.json()
-
-          # Find the target channel
-          channel = next((c for c in data if c.get("channel_name") == TARGET_CHANNEL), None)
-          if not channel:
-              print(f"Channel '{TARGET_CHANNEL}' not found")
-              exit(0)
-
-          # Extract hdnea cookie from channel_url
-          url = channel.get("channel_url", "")
-          match = re.search(r"(hdnea=[^&]+)", url)
-          if not match:
-              print("hdnea cookie not found")
-              exit(0)
-
-          cookie_value = match.group(1)
-
-          # Save to JSON
-          with open(FILE_PATH, "w") as f:
-              json.dump({"cookieHeader": cookie_value}, f, indent=4)
-
-          print(f"cookie.json created successfully: {cookie_value}")
-          EOF
+      - name: Run cookie extraction script
+        run: python extract_cookie.py
 
       - name: Commit & Push
         run: |
@@ -56,3 +32,4 @@ jobs:
             git add cookie.json
             git commit -m "Auto-update Star Sports Select 1 HD cookie"
             git push
+          fi
