@@ -8,6 +8,7 @@ try:
     response.raise_for_status()
     data = response.json()
     cookie_value = data[0]['cookie']
+
     cookie_json = {"cookieHeader": cookie_value}
 
     with open("cookie.json", "w") as f:
